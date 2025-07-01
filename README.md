@@ -29,7 +29,7 @@ pip install yfinance pandas numpy scikit-learn matplotlib pytz
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/sp500-investment-signals.git
+   git clone https://github.com/mattwatson7/sp500-investment-signals.git
    cd sp500-investment-signals
    ```
 
