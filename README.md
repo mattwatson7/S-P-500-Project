@@ -29,8 +29,8 @@ pip install yfinance pandas numpy scikit-learn matplotlib pytz
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/mattwatson7/sp500-investment-signals.git
-   cd sp500-investment-signals
+   git clone https://github.com/mattwatson7/S-P-500-Project.git
+   cd S-P-500-Project
    ```
 
 2. Install dependencies:
