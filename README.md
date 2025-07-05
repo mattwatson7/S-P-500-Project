@@ -40,7 +40,7 @@ pip install yfinance pandas numpy scikit-learn matplotlib pytz
 
 3. Run the project:
    ```bash
-   python S&P500_Project.py
+   python "S&P500_Project.py"
    ```
 
 ---
