@@ -17,10 +17,11 @@ This project is a scalable machine learning system that analyzes all S&P 500 sto
 
 ## Requirements
 
-Make sure you have Python 3.8+ and install the following dependencies:
+Make sure you have Python 3.8+ and install the dependencies listed in
+`requirements.txt`:
 
 ```bash
-pip install yfinance pandas numpy scikit-learn matplotlib pytz
+pip install -r requirements.txt
 ```
 
 ---
