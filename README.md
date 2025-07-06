@@ -10,7 +10,8 @@ This project is a scalable machine learning system that analyzes all S&P 500 sto
 - Per-stock Linear Regression model training  
 - Buy/Sell signal generation based on price prediction  
 - Market capitalization insights included  
-- Multiprocessing for faster performance  
+- Multiprocessing for faster performance
+- Configurable threadpool for downloading data
 - Tracks most recent data update for each stock  
 
 ---
