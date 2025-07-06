@@ -18,8 +18,7 @@ This project is a scalable machine learning system that analyzes all S&P 500 sto
 
 ## Requirements
 
-Make sure you have Python 3.8+ and install the dependencies listed in
-`requirements.txt`:
+Make sure you have Python 3.8+ and install the dependencies listed in `requirements.txt` which are known to work with this project:
 
 ```bash
 pip install -r requirements.txt
