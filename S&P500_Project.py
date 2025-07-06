@@ -25,7 +25,9 @@ def fetch_ticker_data(ticker, five_years_ago):
     try:
         stock = yf.Ticker(ticker)
         market_cap = stock.info.get('marketCap', 0)  # Fetch market cap
-        ticker_data = yf.download(ticker, start=five_years_ago.strftime('%Y-%m-%d'), progress=False, timeout=10)
+        ticker_data = stock.history(start=five_years_ago.strftime('%Y-%m-%d'))
+        if isinstance(ticker_data.columns, pd.MultiIndex):
+            ticker_data.columns = ticker_data.columns.get_level_values(0)
         ticker_data['Ticker'] = ticker
         ticker_data['Date'] = ticker_data.index
         return ticker_data, market_cap
@@ -49,7 +51,7 @@ def process_ticker_data(ticker_data, market_cap, ticker_to_company):
 
     # Define X and y for the current ticker
     X = ticker_data[features]
-    y = ticker_data['Close']
+    y = ticker_data['Close'].astype(float).values
 
     # Standardize the entire dataset
     scaler = StandardScaler()
@@ -69,7 +71,7 @@ def process_ticker_data(ticker_data, market_cap, ticker_to_company):
 
         # Predict today's closing price
         predicted_close = model.predict(today_features_scaled)[0]
-        actual_close = today_data['Close']
+        actual_close = float(today_data['Close'])
 
         # Generate investment suggestion based on the predicted vs. actual close price
         signal = 'Buy' if predicted_close > actual_close else 'Sell'
