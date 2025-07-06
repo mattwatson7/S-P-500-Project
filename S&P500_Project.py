@@ -14,11 +14,29 @@ warnings.filterwarnings("ignore", category=UserWarning, module='sklearn')
 def is_market_open():
     eastern = pytz.timezone('US/Eastern')
     now = datetime.now(eastern)
-    if now.weekday() >= 5:  # Saturday (5) or Sunday (6)
-        return False, now
     market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
     market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
-    return market_open <= now <= market_close, market_close
+
+    if now.weekday() >= 5:  # Saturday (5) or Sunday (6)
+        # Backtrack to the previous Friday's close
+        days_since_friday = now.weekday() - 4
+        friday = now - timedelta(days=days_since_friday)
+        last_market_close = friday.replace(hour=16, minute=0, second=0, microsecond=0)
+        return False, last_market_close
+
+    if market_open <= now <= market_close:
+        return True, market_close
+
+    if now < market_open:
+        # Before market opens - use previous weekday's close
+        prev_day = now - timedelta(days=1)
+        while prev_day.weekday() >= 5:
+            prev_day -= timedelta(days=1)
+        last_market_close = prev_day.replace(hour=16, minute=0, second=0, microsecond=0)
+        return False, last_market_close
+
+    # After today's close
+    return False, market_close
 
 # Function to fetch data for a single ticker
 def fetch_ticker_data(ticker, five_years_ago):
@@ -110,7 +128,8 @@ def main():
         time_since_close = datetime.now(pytz.timezone('US/Eastern')) - last_market_close_time
         hours, remainder = divmod(time_since_close.total_seconds(), 3600)
         minutes = remainder // 60
-        print(f"MARKET IS CLOSED. It was last open {int(hours)} hours and {int(minutes)} minutes ago.")
+        close_str = last_market_close_time.strftime('%A %I:%M %p')
+        print(f"MARKET IS CLOSED. It last closed on {close_str} ({int(hours)} hours and {int(minutes)} minutes ago).")
 
     # Set the start date for fetching historical data (5 years ago)
     five_years_ago = datetime.now() - timedelta(days=5 * 365)
