@@ -47,17 +47,20 @@ def process_ticker_data(ticker_data, market_cap, ticker_to_company):
     # Filter data for the current ticker
     ticker_data = ticker_data.reset_index(drop=True)
 
-    # Define X and y for the current ticker
-    X = ticker_data[features]
-    y = ticker_data['Close']
+    # Split the data so the final row is reserved for prediction
+    train_data = ticker_data.iloc[:-1]
 
-    # Standardize the entire dataset
+    # Define X and y using only historical data
+    X_train = train_data[features]
+    y_train = train_data['Close']
+
+    # Standardize the historical data
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    X_train_scaled = scaler.fit_transform(X_train)
 
-    # Train the model using all samples
+    # Train the model using the historical samples
     model = LinearRegression()
-    model.fit(X_scaled, y)
+    model.fit(X_train_scaled, y_train)
 
     # Get today's data for the ticker
     today_data = ticker_data.iloc[-1]  # Get the latest row for today
