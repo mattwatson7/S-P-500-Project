@@ -10,8 +10,10 @@ This project is a scalable machine learning system that analyzes all S&P 500 sto
 - Per-stock Linear Regression model training  
 - Buy/Sell signal generation based on price prediction  
 - Market capitalization insights included  
-- Multiprocessing for faster performance  
-- Tracks most recent data update for each stock  
+- Multiprocessing for faster performance
+- Configurable thread pool for downloading data
+- Built-in retry logic and optional local caching of downloads
+- Tracks most recent data update for each stock
 
 ---
 
@@ -88,8 +90,8 @@ NVDA (NVIDIA Corp.)       720.11           705.50          14.61
 
 ## How It Works
 
-1. Ticker Fetching – Grabs the latest list of S&P 500 companies.  
-2. Data Retrieval – Downloads 5 years of price data for each stock using `yfinance`.  
+1. Ticker Fetching – Grabs the latest list of S&P 500 companies.
+2. Data Retrieval – Downloads 5 years of price data for each stock using `yfinance` with retry and optional caching. A configurable thread pool limits concurrent requests.
 3. Model Training – Trains a `LinearRegression` model per stock on features: `Open`, `High`, `Low`, `Volume`.  
 4. Prediction – Uses today’s data to predict the closing price and compares it to the actual.  
 5. Signal Generation – Issues a Buy if the prediction is higher than the actual, Sell otherwise.  

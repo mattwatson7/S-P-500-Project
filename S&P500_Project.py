@@ -1,4 +1,8 @@
 import warnings
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
@@ -20,18 +24,42 @@ def is_market_open():
     market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
     return market_open <= now <= market_close, market_close
 
-# Function to fetch data for a single ticker
-def fetch_ticker_data(ticker, five_years_ago):
-    try:
-        stock = yf.Ticker(ticker)
-        market_cap = stock.info.get('marketCap', 0)  # Fetch market cap
-        ticker_data = yf.download(ticker, start=five_years_ago.strftime('%Y-%m-%d'), progress=False, timeout=10)
-        ticker_data['Ticker'] = ticker
-        ticker_data['Date'] = ticker_data.index
-        return ticker_data, market_cap
-    except Exception as e:
-        print(f"Failed to download data for {ticker}: {e}")
-        return None, None
+# Function to fetch data for a single ticker with caching and retries
+def fetch_ticker_data(ticker, start_date, cache_dir="cache", retries=3):
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_file = os.path.join(cache_dir, f"{ticker}.csv")
+
+    if os.path.exists(cache_file):
+        try:
+            cached = pd.read_csv(cache_file, index_col=0, parse_dates=True)
+            cached['Ticker'] = ticker
+            cached['Date'] = cached.index
+            market_cap = yf.Ticker(ticker).info.get('marketCap', 0)
+            return cached, market_cap
+        except Exception as e:
+            print(f"Failed to load cache for {ticker}: {e}")
+
+    for attempt in range(1, retries + 1):
+        try:
+            stock = yf.Ticker(ticker)
+            market_cap = stock.info.get('marketCap', 0)
+            ticker_data = yf.download(
+                ticker,
+                start=start_date.strftime('%Y-%m-%d'),
+                progress=False,
+                timeout=10,
+            )
+            ticker_data['Ticker'] = ticker
+            ticker_data['Date'] = ticker_data.index
+            ticker_data.to_csv(cache_file)
+            return ticker_data, market_cap
+        except Exception as e:
+            print(f"Attempt {attempt}/{retries} failed for {ticker}: {e}")
+            if attempt < retries:
+                time.sleep(2)
+
+    print(f"Failed to download data for {ticker} after {retries} attempts")
+    return None, None
 
 # Function to process each ticker's data (training and prediction)
 def process_ticker_data(ticker_data, market_cap, ticker_to_company):
@@ -91,10 +119,18 @@ def process_ticker_data(ticker_data, market_cap, ticker_to_company):
     return investment_suggestions
 
 # Function to fetch historical data for a list of tickers
-def fetch_historical_data(tickers, start_date):
-    with mp.Pool(mp.cpu_count()) as pool:
-        results = pool.starmap(fetch_ticker_data, [(ticker, start_date) for ticker in tickers])
-    return [(data, cap) for data, cap in results if data is not None]
+def fetch_historical_data(tickers, start_date, max_workers=5):
+    results = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_ticker = {
+            executor.submit(fetch_ticker_data, ticker, start_date): ticker
+            for ticker in tickers
+        }
+        for future in as_completed(future_to_ticker):
+            data, cap = future.result()
+            if data is not None:
+                results.append((data, cap))
+    return results
 
 # Main function to fetch stock data and make predictions in parallel
 def main():
@@ -115,8 +151,10 @@ def main():
     # Set the start date for fetching historical data (5 years ago)
     five_years_ago = datetime.now() - timedelta(days=5 * 365)
 
-    # Fetch stock data in parallel using the new function
-    stock_data_and_caps = fetch_historical_data(ticker_to_company.keys(), five_years_ago)
+    # Fetch stock data using a limited number of threads
+    stock_data_and_caps = fetch_historical_data(
+        ticker_to_company.keys(), five_years_ago, max_workers=5
+    )
 
     # Process the stock data and make predictions in parallel
     with mp.Pool(mp.cpu_count()) as pool:
